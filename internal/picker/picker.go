@@ -251,8 +251,18 @@ func (p *P2CEWMAPicker) Pick(_ *http.Request, eligible []*Endpoint) (*Endpoint, 
 	return ep2, nil
 }
 
-func (p *P2CEWMAPicker) Observe(ep *Endpoint, rtt time.Duration, _ Outcome) {
-	if ep != nil {
-		ep.UpdateEWMA(rtt)
+func (p *P2CEWMAPicker) Observe(ep *Endpoint, rtt time.Duration, outcome Outcome) {
+	if ep == nil {
+		return
 	}
+	if outcome != OutcomeSuccess {
+		// Finagle/Linkerd penalty: failures must never look faster than successes
+		penalty := 1 * time.Second
+		if rtt > penalty {
+			penalty = rtt
+		}
+		ep.UpdateEWMA(penalty)
+		return
+	}
+	ep.UpdateEWMA(rtt)
 }

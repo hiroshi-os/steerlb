@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -151,7 +150,6 @@ type Runtime struct {
 	Routes   []config.RouteConfig
 	Metrics  *metrics.Metrics
 	cancel   context.CancelFunc
-	wg       sync.WaitGroup
 }
 
 func NewRuntime(cfg *config.Config, m *metrics.Metrics, clk picker.Clock, seed int64) (*Runtime, error) {

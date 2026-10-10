@@ -196,10 +196,8 @@ func handleMain(w http.ResponseWriter, r *http.Request) {
 
 	// 1. Blackhole fault: accept and never respond
 	if rollBlackhole < blackholeRate {
-		select {
-		case <-r.Context().Done():
-			return
-		}
+		<-r.Context().Done()
+		return
 	}
 
 	// 2. Base latency distribution (lognormal in ms)
