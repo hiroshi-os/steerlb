@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Format check
+        run: |
+          diffs=$(gofmt -l .)
+          if [ -n "$diffs" ]; then
+            echo "Unformatted files:"
+            echo "$diffs"
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Staticcheck
+        uses: dominikh/staticcheck-action@v1.3.1
+        with:
+          version: "latest"
+          install-go: false
+
+      - name: Run tests with race detector
+        run: go test -race -v ./...
+
+      - name: Fuzz headers
+        run: go test -run=XXX -fuzz=FuzzHeaders -fuzztime=30s ./internal/proxy
+
+      - name: Faultbench smoke test
+        run: go run ./cmd/faultbench -scenarios S1,S3 -d 20s -rps 300 -out bench/faultbench.json
+
+      - name: Upload faultbench artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: faultbench-report
+          path: bench/faultbench.json
